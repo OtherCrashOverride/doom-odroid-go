@@ -339,7 +339,7 @@ static const char *auto_shot_fname;
 
 static void D_DoomLoop(void)
 {
-    heap_caps_print_heap_info(MALLOC_CAP_8BIT);
+    //heap_caps_print_heap_info(MALLOC_CAP_8BIT);
 
   for (;;)
     {
