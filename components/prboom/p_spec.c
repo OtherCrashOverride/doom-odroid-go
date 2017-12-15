@@ -59,6 +59,8 @@
 #include "r_plane.h"
 #include "lprintf.h"
 
+#include <esp_heap_caps.h>
+
 //
 // Animating textures and planes
 // There is another anim_t used in wi_stuff, unrelated.
@@ -154,6 +156,7 @@ void P_InitPicAnims (void)
     {
       size_t newmax = maxanims ? maxanims*2 : MAXANIMS;
       anims = realloc(anims, newmax*sizeof(*anims));   // killough
+      //anims = heap_caps_malloc(newmax*sizeof(*anims), MALLOC_CAP_SPIRAM);
       lastanim = anims + maxanims;
       maxanims = newmax;
     }

@@ -83,6 +83,8 @@
 #include "lprintf.h"  // jff 08/03/98 - declaration of lprintf
 #include "am_map.h"
 
+#include <esp_heap_caps.h>
+
 void GetFirstMap(int *ep, int *map); // Ty 08/29/98 - add "-warp x" functionality
 static void D_PageDrawer(void);
 
@@ -142,7 +144,7 @@ static const int nstandard_iwads = sizeof standard_iwads/sizeof*standard_iwads;
  *
  * Called by I/O functions when an event is received.
  * Try event handlers for each code area in turn.
- * cph - in the true spirit of the Boom source, let the 
+ * cph - in the true spirit of the Boom source, let the
  *  short ciruit operator madness begin!
  */
 
@@ -337,6 +339,8 @@ static const char *auto_shot_fname;
 
 static void D_DoomLoop(void)
 {
+    heap_caps_print_heap_info(MALLOC_CAP_8BIT);
+
   for (;;)
     {
       WasRenderedInTryRunTics = false;
@@ -365,7 +369,7 @@ static void D_DoomLoop(void)
       if (players[displayplayer].mo) // cph 2002/08/10
 	S_UpdateSounds(players[displayplayer].mo);// move positional sounds
 
-      if (V_GetMode() == VID_MODEGL ? 
+      if (V_GetMode() == VID_MODEGL ?
         !movement_smooth || !WasRenderedInTryRunTics :
         !movement_smooth || !WasRenderedInTryRunTics || gamestate != wipegamestate
       )
@@ -948,14 +952,14 @@ static void FindResponseFile (void)
 	    if (size > 0) {
 	      char *s = malloc(size+1);
 	      char *p = s;
-	      int quoted = 0; 
+	      int quoted = 0;
 
 	      while (size > 0) {
 		// Whitespace terminates the token unless quoted
 		if (!quoted && isspace(*infile)) break;
 		if (*infile == '\"') {
 		  // Quotes are removed but remembered
-		  infile++; size--; quoted ^= 1; 
+		  infile++; size--; quoted ^= 1;
 		} else {
 		  *p++ = *infile++; size--;
 		}
@@ -1159,6 +1163,8 @@ static void L_SetupConsoleMasks(void) {
 static void D_DoomMainSetup(void)
 {
   int p,slot;
+
+//heap_caps_print_heap_info(MALLOC_CAP_8BIT);
 
   infoInit();
   L_SetupConsoleMasks();
@@ -1381,7 +1387,7 @@ static void D_DoomMainSetup(void)
       use_fullscreen = 0;
 
   // e6y
-  // New command-line options for setting a window (-window) 
+  // New command-line options for setting a window (-window)
   // or fullscreen (-nowindow) mode temporarily which is not saved in cfg.
   // It works like "-geom" switch
 
@@ -1524,7 +1530,7 @@ static void D_DoomMainSetup(void)
 
   lprintf(LO_INFO,"\n");     // killough 3/6/98: add a newline, by popular demand :)
 
-  // e6y 
+  // e6y
   // option to disable automatic loading of dehacked-in-wad lump
   if (!M_CheckParm ("-nodeh"))
     if ((p = W_CheckNumForName("DEHACKED")) != -1) // cph - add dehacked-in-a-wad support

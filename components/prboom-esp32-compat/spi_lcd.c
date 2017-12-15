@@ -26,14 +26,14 @@
 #include "sdkconfig.h"
 
 
-#if 0
-#define PIN_NUM_MISO 25
+#if 1
+#define PIN_NUM_MISO 19
 #define PIN_NUM_MOSI 23
-#define PIN_NUM_CLK  19
-#define PIN_NUM_CS   22
+#define PIN_NUM_CLK  18
+#define PIN_NUM_CS   5
 #define PIN_NUM_DC   21
-#define PIN_NUM_RST  18
-#define PIN_NUM_BCKL 5
+#define PIN_NUM_RST  -1
+#define PIN_NUM_BCKL 14
 #else
 #define PIN_NUM_MOSI CONFIG_HW_LCD_MOSI_GPIO
 #define PIN_NUM_CLK  CONFIG_HW_LCD_CLK_GPIO
@@ -102,7 +102,7 @@ static const ili_init_cmd_t ili_init_cmds[]={
     {0xE0, {0x1F, 0x1A, 0x18, 0x0A, 0x0F, 0x06, 0x45, 0X87, 0x32, 0x0A, 0x07, 0x02, 0x07, 0x05, 0x00}, 15},
     {0XE1, {0x00, 0x25, 0x27, 0x05, 0x10, 0x09, 0x3A, 0x78, 0x4D, 0x05, 0x18, 0x0D, 0x38, 0x3A, 0x1F}, 15},
     {0x2A, {0x00, 0x00, 0x00, 0xEF}, 4},
-    {0x2B, {0x00, 0x00, 0x01, 0x3f}, 4}, 
+    {0x2B, {0x00, 0x00, 0x01, 0x3f}, 4},
     {0x2C, {0}, 0},
     {0xB7, {0x07}, 1},
     {0xB6, {0x0A, 0x82, 0x27, 0x00}, 4},
@@ -117,7 +117,7 @@ static spi_device_handle_t spi;
 
 
 //Send a command to the ILI9341. Uses spi_device_transmit, which waits until the transfer is complete.
-void ili_cmd(spi_device_handle_t spi, const uint8_t cmd) 
+void ili_cmd(spi_device_handle_t spi, const uint8_t cmd)
 {
     esp_err_t ret;
     spi_transaction_t t;
@@ -130,7 +130,7 @@ void ili_cmd(spi_device_handle_t spi, const uint8_t cmd)
 }
 
 //Send data to the ILI9341. Uses spi_device_transmit, which waits until the transfer is complete.
-void ili_data(spi_device_handle_t spi, const uint8_t *data, int len) 
+void ili_data(spi_device_handle_t spi, const uint8_t *data, int len)
 {
     esp_err_t ret;
     spi_transaction_t t;
@@ -145,26 +145,26 @@ void ili_data(spi_device_handle_t spi, const uint8_t *data, int len)
 
 //This function is called (in irq context!) just before a transmission starts. It will
 //set the D/C line to the value indicated in the user field.
-void ili_spi_pre_transfer_callback(spi_transaction_t *t) 
+void ili_spi_pre_transfer_callback(spi_transaction_t *t)
 {
     int dc=(int)t->user;
     gpio_set_level(PIN_NUM_DC, dc);
 }
 
 //Initialize the display
-void ili_init(spi_device_handle_t spi) 
+void ili_init(spi_device_handle_t spi)
 {
     int cmd=0;
     //Initialize non-SPI GPIOs
     gpio_set_direction(PIN_NUM_DC, GPIO_MODE_OUTPUT);
-    gpio_set_direction(PIN_NUM_RST, GPIO_MODE_OUTPUT);
+    //gpio_set_direction(PIN_NUM_RST, GPIO_MODE_OUTPUT);
     gpio_set_direction(PIN_NUM_BCKL, GPIO_MODE_OUTPUT);
 
     //Reset the display
-    gpio_set_level(PIN_NUM_RST, 0);
-    vTaskDelay(100 / portTICK_RATE_MS);
-    gpio_set_level(PIN_NUM_RST, 1);
-    vTaskDelay(100 / portTICK_RATE_MS);
+    // gpio_set_level(PIN_NUM_RST, 0);
+    // vTaskDelay(100 / portTICK_RATE_MS);
+    // gpio_set_level(PIN_NUM_RST, 1);
+    // vTaskDelay(100 / portTICK_RATE_MS);
 
     //Send all the commands
     while (ili_init_cmds[cmd].databytes!=0xff) {
@@ -237,7 +237,7 @@ static void send_header_start(spi_device_handle_t spi, int xpos, int ypos, int w
 }
 
 
-void send_header_cleanup(spi_device_handle_t spi) 
+void send_header_cleanup(spi_device_handle_t spi)
 {
     spi_transaction_t *rtrans;
     esp_err_t ret;
@@ -302,7 +302,7 @@ void IRAM_ATTR displayTask(void *arg) {
 
 	//We're going to do a fair few transfers in parallel. Set them all up.
 	for (x=0; x<NO_SIM_TRANS; x++) {
-		dmamem[x]=pvPortMallocCaps(MEM_PER_TRANS*2, MALLOC_CAP_DMA);
+        dmamem[x]=heap_caps_malloc(MEM_PER_TRANS*2, MALLOC_CAP_DMA);
 		assert(dmamem[x]);
 		memset(&trans[x], 0, sizeof(spi_transaction_t));
 		trans[x].length=MEM_PER_TRANS*2;

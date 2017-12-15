@@ -40,6 +40,8 @@
 #include "sounds.h"
 #include "lprintf.h"
 
+#include <esp_heap_caps.h>
+
 // killough 2/8/98: Remove switch limit
 
 static int *switchlist;                           // killough
@@ -81,8 +83,14 @@ void P_InitSwitchList(void)
   for (i=0;;i++)
   {
     if (index+1 >= max_numswitches)
+    {
       switchlist = realloc(switchlist, sizeof *switchlist *
           (max_numswitches = max_numswitches ? max_numswitches*2 : 8));
+
+      //free(switchlist);
+      //switchlist = heap_caps_malloc(sizeof *switchlist *
+    //      (max_numswitches = max_numswitches ? max_numswitches*2 : 8), MALLOC_CAP_SPIRAM);
+     }
     if (SHORT(alphSwitchList[i].episode) <= episode) //jff 5/11/98 endianess
     {
       int texture1, texture2;

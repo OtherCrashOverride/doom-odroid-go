@@ -234,7 +234,7 @@ static int getFreeHandle() {
 		lprintf(LO_ERROR, "I_Mmap: More mmaps than NO_MMAP_HANDLES!");
 		exit(0);
 	}
-	
+
 	if (mmapHandle[nextHandle].addr) {
 		spi_flash_munmap(mmapHandle[nextHandle].handle);
 		mmapHandle[nextHandle].addr=NULL;
@@ -337,7 +337,3 @@ void I_SetAffinityMask(void)
 int access(const char *path, int atype) {
     return 1;
 }
-
-
-
-

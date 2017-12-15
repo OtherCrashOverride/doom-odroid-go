@@ -42,6 +42,8 @@
 #include "v_video.h"
 #include "lprintf.h"
 
+#include <esp_heap_caps.h>
+
 #define MINZ        (FRACUNIT*4)
 #define BASEYCENTER 100
 
@@ -165,11 +167,13 @@ static void R_InitSpriteDefs(const char * const * namelist)
   numsprites = i;
 
   sprites = Z_Malloc(numsprites *sizeof(*sprites), PU_STATIC, NULL);
+  //sprites = heap_caps_malloc(numsprites *sizeof(*sprites), MALLOC_CAP_SPIRAM);
 
   // Create hash table based on just the first four letters of each sprite
   // killough 1/31/98
 
   hash = malloc(sizeof(*hash)*numentries); // allocate hash table
+  //hash = heap_caps_malloc(sizeof(*hash)*numentries, MALLOC_CAP_SPIRAM);
 
   for (i=0; (size_t)i<numentries; i++)             // initialize hash table as empty
     hash[i].index = -1;
