@@ -179,14 +179,14 @@ static FileDesc fds[32];
 int I_Open(const char *wad, int flags) {
 	int x=3;
 	while (fds[x].part!=NULL) x++;
-	if (strcmp(wad, "DOOM1.WAD")==0) {
+	//if (strcmp(wad, "DOOM1.WAD")==0) {
 		fds[x].part=esp_partition_find_first(66, 6, NULL);
 		fds[x].offset=0;
 		fds[x].size=fds[x].part->size;
-	} else {
-		lprintf(LO_INFO, "I_Open: open %s failed\n", wad);
-		return -1;
-	}
+	// } else {
+	// 	lprintf(LO_INFO, "I_Open: open %s failed\n", wad);
+	// 	return -1;
+	// }
 	return x;
 }
 

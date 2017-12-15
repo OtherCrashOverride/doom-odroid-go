@@ -743,7 +743,9 @@ static void NormalizeSlashes(char *str)
 static char *FindIWADFile(void)
 {
   char  * iwad  = NULL;
+  //char *hardcodedIWad="DOOM.WAD";
   char *hardcodedIWad="DOOM1.WAD";
+  //char *hardcodedIWad="DOOM2.WAD";
   iwad=malloc(strlen(hardcodedIWad)+1);
   strcpy(iwad, hardcodedIWad);
 #if 0
