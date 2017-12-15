@@ -27,6 +27,21 @@
 #include "psxcontroller.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "driver/gpio.h"
+#include <driver/adc.h>
+
+
+typedef struct
+{
+    uint8_t Up;
+    uint8_t Right;
+    uint8_t Down;
+    uint8_t Left;
+    uint8_t Select;
+    uint8_t Start;
+    uint8_t A;
+    uint8_t B;
+} JoystickState;
 
 
 //The gamepad uses keyboard emulation, but for compilation, these variables need to be placed
@@ -49,7 +64,7 @@ static const JsKeyMap keymap[]={
 	{0x40, &key_down},
 	{0x80, &key_left},
 	{0x20, &key_right},
-	
+
 	{0x4000, &key_use},				//cross
 	{0x2000, &key_fire},			//circle
 	{0x2000, &key_menu_enter},		//circle
@@ -58,7 +73,7 @@ static const JsKeyMap keymap[]={
 
 	{0x8, &key_escape},				//start
 	{0x1, &key_map},				//select
-	
+
 	{0x400, &key_strafeleft},		//L1
 	{0x100, &key_speed},			//L2
 	{0x800, &key_straferight},		//R1
@@ -67,6 +82,57 @@ static const JsKeyMap keymap[]={
 	{0, NULL},
 };
 
+int JoystickRead()
+{
+	JoystickState state;
+
+	const int DEAD_ZONE = 1024;
+
+	int joyX = adc1_get_raw(ADC1_CHANNEL_6);
+	int joyY = adc1_get_raw(ADC1_CHANNEL_7);
+
+    state.Right = (joyX > (2048 + DEAD_ZONE));
+    state.Left = (joyX < (2048 - DEAD_ZONE));
+    state.Down = (joyY < (2048 - DEAD_ZONE));
+    state.Up = (joyY > (2048 + DEAD_ZONE));
+
+	state.Select = !(gpio_get_level(GPIO_NUM_13));
+	state.Start = !(gpio_get_level(GPIO_NUM_0));
+
+    //state.Select = !(gpio_get_level(GPIO_NUM_27));
+    //state.Start = !(gpio_get_level(GPIO_NUM_25));
+
+    state.A = !(gpio_get_level(GPIO_NUM_32));
+    state.B = !(gpio_get_level(GPIO_NUM_33));
+
+	int result = 0;
+
+	if (!state.Up)
+		result |= 0x10;
+
+	if (!state.Down)
+		result |= 0x40;
+
+	if (!state.Left)
+		result |= 0x80;
+
+	if (!state.Right)
+		result |= 0x20;
+
+	if (!state.A)
+		result |= 0x2000;
+
+	if (!state.B)
+		result |= 0x4000;
+
+	if (!state.Start)
+		result |= 0x8;
+
+	if (!state.Select)
+		result |= 0x1;
+
+	return result;
+}
 
 void gamepadPoll(void)
 {
@@ -86,12 +152,13 @@ void gamepadPoll(void)
 }
 
 
+
 void jsTask(void *arg) {
 	int oldJoyVal=0xFFFF;
 	printf("Joystick task starting.\n");
 	while(1) {
 		vTaskDelay(20/portTICK_PERIOD_MS);
-		joyVal=psxReadInput();
+		joyVal=JoystickRead();
 //		if (joyVal!=oldJoyVal) printf("Joy: %x\n", joyVal^0xffff);
 		oldJoyVal=joyVal;
 	}
@@ -102,9 +169,25 @@ void gamepadInit(void)
 	lprintf(LO_INFO, "gamepadInit: Initializing game pad.\n");
 }
 
-void jsInit() {
-	//Starts the js task
-	psxcontrollerInit();
-	xTaskCreatePinnedToCore(&jsTask, "js", 5000, NULL, 7, NULL, 0);
+void JoystickInit()
+{
+	gpio_set_direction(GPIO_NUM_13, GPIO_MODE_INPUT);	// Select (left - bottom)
+	gpio_set_direction(GPIO_NUM_0, GPIO_MODE_INPUT);	// Start (right)
+	//GPIO_NUM_39 (left - top)
+
+	//gpio_set_direction(GPIO_NUM_27, GPIO_MODE_INPUT);	// Select
+	//gpio_set_direction(GPIO_NUM_25, GPIO_MODE_INPUT);	// Start
+
+	gpio_set_direction(32, GPIO_MODE_INPUT);	// A
+    gpio_set_direction(33, GPIO_MODE_INPUT);	// B
+
+	adc1_config_width(ADC_WIDTH_12Bit);
+    adc1_config_channel_atten(ADC1_CHANNEL_6, ADC_ATTEN_11db);	// JOY-X
+	adc1_config_channel_atten(ADC1_CHANNEL_7, ADC_ATTEN_11db);	// JOY-Y
 }
 
+void jsInit() {
+	//Starts the js task
+	JoystickInit();
+	xTaskCreatePinnedToCore(&jsTask, "js", 5000, NULL, 7, NULL, 0);
+}
