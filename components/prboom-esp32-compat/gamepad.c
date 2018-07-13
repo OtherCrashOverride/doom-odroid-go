@@ -30,6 +30,15 @@
 #include "driver/gpio.h"
 #include <driver/adc.h>
 
+#define ODROID_GAMEPAD_IO_X ADC1_CHANNEL_6
+#define ODROID_GAMEPAD_IO_Y ADC1_CHANNEL_7
+#define ODROID_GAMEPAD_IO_SELECT GPIO_NUM_27
+#define ODROID_GAMEPAD_IO_START GPIO_NUM_39
+#define ODROID_GAMEPAD_IO_A GPIO_NUM_32
+#define ODROID_GAMEPAD_IO_B GPIO_NUM_33
+#define ODROID_GAMEPAD_IO_MENU GPIO_NUM_13
+#define ODROID_GAMEPAD_IO_VOLUME GPIO_NUM_0
+
 
 typedef struct
 {
@@ -86,24 +95,51 @@ int JoystickRead()
 {
 	JoystickState state;
 
-	const int DEAD_ZONE = 1024;
 
-	int joyX = adc1_get_raw(ADC1_CHANNEL_6);
-	int joyY = adc1_get_raw(ADC1_CHANNEL_7);
+    int joyX = adc1_get_raw(ODROID_GAMEPAD_IO_X);
+    int joyY = adc1_get_raw(ODROID_GAMEPAD_IO_Y);
 
-    state.Right = (joyX > (2048 + DEAD_ZONE));
-    state.Left = (joyX < (2048 - DEAD_ZONE));
-    state.Down = (joyY < (2048 - DEAD_ZONE));
-    state.Up = (joyY > (2048 + DEAD_ZONE));
+    if (joyX > 2048 + 1024)
+    {
+        state.Left = 1;
+        state.Right = 0;
+    }
+    else if (joyX > 1024)
+    {
+        state.Left = 0;
+        state.Right = 1;
+    }
+    else
+    {
+        state.Left = 0;
+        state.Right = 0;
+    }
 
-	state.Select = !(gpio_get_level(GPIO_NUM_13));
-	state.Start = !(gpio_get_level(GPIO_NUM_0));
+    if (joyY > 2048 + 1024)
+    {
+        state.Up = 1;
+        state.Down = 0;
+    }
+    else if (joyY > 1024)
+    {
+        state.Up = 0;
+        state.Down = 1;
+    }
+    else
+    {
+        state.Up = 0;
+        state.Down = 0;
+    }
 
-    //state.Select = !(gpio_get_level(GPIO_NUM_27));
-    //state.Start = !(gpio_get_level(GPIO_NUM_25));
+    state.Select = !(gpio_get_level(ODROID_GAMEPAD_IO_SELECT));
+    state.Start = !(gpio_get_level(ODROID_GAMEPAD_IO_START));
 
-    state.A = !(gpio_get_level(GPIO_NUM_32));
-    state.B = !(gpio_get_level(GPIO_NUM_33));
+    state.A = !(gpio_get_level(ODROID_GAMEPAD_IO_A));
+    state.B = !(gpio_get_level(ODROID_GAMEPAD_IO_B));
+
+    //state.values[ODROID_INPUT_MENU] = !(gpio_get_level(ODROID_GAMEPAD_IO_MENU));
+    //state.values[ODROID_INPUT_VOLUME] = !(gpio_get_level(ODROID_GAMEPAD_IO_VOLUME));
+
 
 	int result = 0;
 
@@ -171,19 +207,25 @@ void gamepadInit(void)
 
 void JoystickInit()
 {
-	gpio_set_direction(GPIO_NUM_13, GPIO_MODE_INPUT);	// Select (left - bottom)
-	gpio_set_direction(GPIO_NUM_0, GPIO_MODE_INPUT);	// Start (right)
-	//GPIO_NUM_39 (left - top)
+    gpio_set_direction(ODROID_GAMEPAD_IO_SELECT, GPIO_MODE_INPUT);
+	gpio_set_pull_mode(ODROID_GAMEPAD_IO_SELECT, GPIO_PULLUP_ONLY);
 
-	//gpio_set_direction(GPIO_NUM_27, GPIO_MODE_INPUT);	// Select
-	//gpio_set_direction(GPIO_NUM_25, GPIO_MODE_INPUT);	// Start
+	gpio_set_direction(ODROID_GAMEPAD_IO_START, GPIO_MODE_INPUT);
 
-	gpio_set_direction(32, GPIO_MODE_INPUT);	// A
-    gpio_set_direction(33, GPIO_MODE_INPUT);	// B
+	gpio_set_direction(ODROID_GAMEPAD_IO_A, GPIO_MODE_INPUT);
+	gpio_set_pull_mode(ODROID_GAMEPAD_IO_A, GPIO_PULLUP_ONLY);
+
+    gpio_set_direction(ODROID_GAMEPAD_IO_B, GPIO_MODE_INPUT);
+	gpio_set_pull_mode(ODROID_GAMEPAD_IO_B, GPIO_PULLUP_ONLY);
 
 	adc1_config_width(ADC_WIDTH_12Bit);
-    adc1_config_channel_atten(ADC1_CHANNEL_6, ADC_ATTEN_11db);	// JOY-X
-	adc1_config_channel_atten(ADC1_CHANNEL_7, ADC_ATTEN_11db);	// JOY-Y
+    adc1_config_channel_atten(ODROID_GAMEPAD_IO_X, ADC_ATTEN_11db);
+	adc1_config_channel_atten(ODROID_GAMEPAD_IO_Y, ADC_ATTEN_11db);
+
+	gpio_set_direction(ODROID_GAMEPAD_IO_MENU, GPIO_MODE_INPUT);
+	gpio_set_pull_mode(ODROID_GAMEPAD_IO_MENU, GPIO_PULLUP_ONLY);
+
+    gpio_set_direction(ODROID_GAMEPAD_IO_VOLUME, GPIO_MODE_INPUT);
 }
 
 void jsInit() {
