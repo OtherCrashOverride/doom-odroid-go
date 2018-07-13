@@ -475,7 +475,7 @@ void IRAM_ATTR displayTask(void *arg) {
 #include    <xtensa/config/core.h>
 #include    <xtensa/corebits.h>
 #include    <xtensa/config/system.h>
-#include    <xtensa/simcall.h>
+//#include    <xtensa/simcall.h>
 
 void spi_lcd_wait_finish() {
 #ifndef DOUBLE_BUFFER

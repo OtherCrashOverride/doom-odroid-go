@@ -334,6 +334,6 @@ void I_SetAffinityMask(void)
 }
 
 
-int access(const char *path, int atype) {
-    return 1;
-}
+// int access(const char *path, int atype) {
+//     return 1;
+// }
