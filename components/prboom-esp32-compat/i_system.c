@@ -175,14 +175,23 @@ typedef struct {
 } FileDesc;
 
 static FileDesc fds[32];
+static size_t partition_address;
 
 int I_Open(const char *wad, int flags) {
 	int x=3;
 	while (fds[x].part!=NULL) x++;
 	//if (strcmp(wad, "DOOM1.WAD")==0) {
-		fds[x].part=esp_partition_find_first(66, 6, NULL);
+		const esp_partition_t* partition = esp_partition_find_first(ESP_PARTITION_TYPE_APP,
+		        ESP_PARTITION_SUBTYPE_APP_OTA_1, NULL);
+	    if (partition == NULL)
+	    {
+			printf("partition not found.\n");
+			abort();
+		}
+		partition_address = partition->address;
+		fds[x].part=0;
 		fds[x].offset=0;
-		fds[x].size=fds[x].part->size;
+		fds[x].size=0x400000; //fds[x].part->size;
 	// } else {
 	// 	lprintf(LO_INFO, "I_Open: open %s failed\n", wad);
 	// 	return -1;
@@ -273,11 +282,27 @@ void *I_Mmap(void *addr, size_t length, int prot, int flags, int ifd, off_t offs
 	i=getFreeHandle();
 
 	//lprintf(LO_INFO, "I_Mmap: mmaping offset %d size %d handle %d\n", (int)offset, (int)length, i);
-	err=esp_partition_mmap(fds[ifd].part, offset, length, SPI_FLASH_MMAP_DATA, (const void**)&retaddr, &mmapHandle[i].handle);
+	//err=esp_partition_mmap(fds[ifd].part, offset, length, SPI_FLASH_MMAP_DATA, (const void**)&retaddr, &mmapHandle[i].handle);
+
+	size_t phys_addr = partition_address + offset;
+    // offset within 64kB block
+    size_t region_offset = phys_addr & 0xffff;
+    size_t mmap_addr = phys_addr & 0xffff0000;
+    err = spi_flash_mmap(mmap_addr, length+region_offset, SPI_FLASH_MMAP_DATA, (const void**)&retaddr, &mmapHandle[i].handle);
+    // adjust returned pointer to point to the correct offset
+    if (err == ESP_OK) {
+        retaddr = (void*) (((ptrdiff_t) retaddr) + region_offset);
+    }
+
 	if (err==ESP_ERR_NO_MEM) {
 		lprintf(LO_ERROR, "I_Mmap: No free address space. Cleaning up unused cached mmaps...\n");
 		freeUnusedMmaps();
-		err=esp_partition_mmap(fds[ifd].part, offset, length, SPI_FLASH_MMAP_DATA, (const void**)&retaddr, &mmapHandle[i].handle);
+		//err=esp_partition_mmap(fds[ifd].part, offset, length, SPI_FLASH_MMAP_DATA, (const void**)&retaddr, &mmapHandle[i].handle);
+		err = spi_flash_mmap(mmap_addr, length+region_offset, SPI_FLASH_MMAP_DATA, (const void**)&retaddr, &mmapHandle[i].handle);
+	    // adjust returned pointer to point to the correct offset
+	    if (err == ESP_OK) {
+	        retaddr = (void*) (((ptrdiff_t) retaddr) + region_offset);
+	    }
 	}
 	mmapHandle[i].addr=retaddr;
 	mmapHandle[i].len=length;
