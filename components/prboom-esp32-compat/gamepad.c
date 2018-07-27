@@ -48,6 +48,8 @@ typedef struct
     uint8_t Left;
     uint8_t Select;
     uint8_t Start;
+    uint8_t Volume;
+    uint8_t Menu;
     uint8_t A;
     uint8_t B;
 } JoystickState;
@@ -133,6 +135,8 @@ int JoystickRead()
 
     state.Select = !(gpio_get_level(ODROID_GAMEPAD_IO_SELECT));
     state.Start = !(gpio_get_level(ODROID_GAMEPAD_IO_START));
+    state.Volume = !(gpio_get_level(ODROID_GAMEPAD_IO_VOLUME));
+    state.Menu = !(gpio_get_level(ODROID_GAMEPAD_IO_MENU));
 
     state.A = !(gpio_get_level(ODROID_GAMEPAD_IO_A));
     state.B = !(gpio_get_level(ODROID_GAMEPAD_IO_B));
@@ -166,6 +170,12 @@ int JoystickRead()
 
 	if (!state.Select)
 		result |= 0x1;
+
+	if (!state.Volume)
+		result |= 0x1000;
+	
+	if (!state.Menu)
+		result |= 0x200;
 
 	return result;
 }
