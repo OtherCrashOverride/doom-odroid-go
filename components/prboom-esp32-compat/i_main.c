@@ -61,6 +61,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+//include support for odroid-go
+#include "../odroid/odroid_sdcard.h"
+
 /* Most of the following has been rewritten by Lee Killough
  *
  * I_GetTime
@@ -242,6 +245,11 @@ int doom_main(int argc, char const * const *argv)
 
   /* cphipps - call to video specific startup code */
   I_PreInitGraphics();
+
+  // Init SD Card support for Odroid-GO
+  lprintf(LO_INFO, "\nLoading Odroid-GO SD card support...\n");
+  int error_code = odroid_sdcard_open("/sd");
+  lprintf(LO_INFO, "Finished loading SD card support: %i\n", error_code);
 
   D_DoomMain ();
   return 0;
