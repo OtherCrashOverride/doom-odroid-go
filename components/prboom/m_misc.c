@@ -84,19 +84,23 @@ static inline void I_EndRead(void) {}
 boolean M_WriteFile(char const *name, void *source, int length)
 {
   FILE *fp;
-  return 0;
+//  return 0;
   errno = 0;
 
-  if (!(fp = fopen(name, "wb")))       // Try opening file
+  if (!(fp = fopen(name, "wb"))){       // Try opening file
+    lprintf(LO_WARN, "M_WriteFile: Unable to open file %s for writing", name);
     return 0;                          // Could not open file for writing
+  }
 
   I_BeginRead();                       // Disk icon on
   length = fwrite(source, 1, length, fp) == (size_t)length;   // Write data
   fclose(fp);
   I_EndRead();                         // Disk icon off
 
-  if (!length)                         // Remove partially written file
+  if (!length){                         // Remove partially written file
+    lprintf(LO_WARN, "M_WriteFile: Written file has zero length");
     remove(name);
+  }
 
   return length;
 }
@@ -112,7 +116,7 @@ int M_ReadFile(char const *name, byte **buffer)
   FILE *fp;
 
   lprintf(LO_WARN, "Attempting M_ReadFile %s\n", name);
-  return -1;
+//  return -1;
   if ((fp = fopen(name, "rb")))
     {
       size_t length;

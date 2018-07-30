@@ -1443,6 +1443,7 @@ void G_ForcedLoadGame(void)
 // killough 5/15/98: add command-line
 void G_LoadGame(int slot, boolean command)
 {
+  lprintf(LO_INFO, "G_LoadGame: slot %d, command %d", slot, command);
   if (!demoplayback && !command) {
     // CPhipps - handle savegame filename in G_DoLoadGame
     //         - Delay load so it can be communicated in net game
@@ -1508,15 +1509,17 @@ static const size_t num_version_headers = sizeof(version_headers) / sizeof(versi
 
 void G_DoLoadGame(void)
 {
+  lprintf(LO_INFO, "G_DoLoadGame... ");
   int  length, i;
   // CPhipps - do savegame filename stuff here
   char name[PATH_MAX+1];     // killough 3/22/98
   int savegame_compatibility = -1;
 
+  lprintf(LO_INFO, "G_DoLoadGame: About to call G_SaveGameName(%s,%d,%d,%d) ", name, sizeof(name), savegameslot, demoplayback);
   G_SaveGameName(name,sizeof(name),savegameslot, demoplayback);
 
   gameaction = ga_nothing;
-
+  lprintf(LO_INFO, "G_DoLoadGame: About to call M_ReadFile(%s, savebuffer)", name);
   length = M_ReadFile(name, &savebuffer);
   if (length<=0)
     I_Error("Couldn't read file %s: %s", name, "(Unknown Error)");
@@ -1822,10 +1825,15 @@ static void G_DoSaveGame (boolean menu)
   length = save_p - savebuffer;
 
   Z_CheckHeap();
-  doom_printf( "%s", M_WriteFile(name, savebuffer, length)
+  lprintf(LO_WARN, "M_DoSaveGame: About to write file with name %s, length %d\n", name, length);
+  boolean write_result = M_WriteFile(name, savebuffer, length);
+
+  doom_printf( "%s", write_result
          ? s_GGSAVED /* Ty - externalised */
          : "Game save failed!"); // CPhipps - not externalised
 
+  lprintf(LO_WARN, "M_DoSaveGame: Write result: %d\n", write_result);
+  
   free(savebuffer);  // killough
   savebuffer = save_p = NULL;
 
@@ -2218,8 +2226,7 @@ void G_RecordDemo (const char* name)
   /* cph - Record demos straight to file
    * If file already exists, try to continue existing demo
    */
-//  if (access(demoname, F_OK)) {
-  if (0) {
+  if (access(demoname, F_OK)) {
     demofp = fopen(demoname, "wb");
   } else {
     demofp = fopen(demoname, "r+");

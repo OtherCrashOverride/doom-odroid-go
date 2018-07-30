@@ -840,6 +840,20 @@ void M_ReadSaveStrings(void)
     char name[PATH_MAX+1];    // killough 3/22/98
     FILE *fp;  // killough 11/98: change to use stdio
 
+    // Set default savegame string names, because we can't input any
+    lprintf(LO_INFO, "Faking save game names...\n");
+    strcpy(savegamestrings[0], "Quick_save\0");
+    strcpy(savegamestrings[1], "Regular_save\0");
+    strcpy(savegamestrings[2], "Danger_Will_Robinson\0");
+    strcpy(savegamestrings[3], "Oh_not_again\0");
+    strcpy(savegamestrings[4], "I_will_win\0");
+    strcpy(savegamestrings[5], "Im_lost\0");
+    strcpy(savegamestrings[6], "Not_this_again\0");
+    strcpy(savegamestrings[7], "Mamma_mia\0");
+    strcpy(savegamestrings[8], "Save_me\0");
+    strcpy(savegamestrings[9], "The_final_save\0");
+
+
     /* killough 3/22/98
      * cph - add not-demoplayback parameter */
     G_SaveGameName(name,sizeof(name),i,false);
@@ -954,16 +968,16 @@ enum
 menuitem_t OptionsMenu[]=
 {
   // killough 4/6/98: move setup to be a sub-menu of OPTIONs
-  {1,"", M_General, 'g'},      // killough 10/98
-  {1,"",  M_Setup,   's'},                          // phares 3/21/98
-  {1,"", M_EndGame,'e'},
-  {1,"",  M_ChangeMessages,'m'},
+  {1,"M_GENERL", M_General, 'g'},      // killough 10/98
+  {1,"M_SETUP",  M_Setup,   's'},                          // phares 3/21/98
+  {1,"M_ENDGAM", M_EndGame,'e'},
+  {1,"M_MESSG",  M_ChangeMessages,'m'},
   /*    {1,"M_DETAIL",  M_ChangeDetail,'g'},  unused -- killough */
-  {2,"", M_SizeDisplay,'s'},
+  {2,"M_SCRNSZ", M_SizeDisplay,'s'},
   {-1,"",0},
-  {1,"",  M_ChangeSensitivity,'m'},
+  {1,"M_MSENS",  M_ChangeSensitivity,'m'},
   /* {-1,"",0},  replaced with submenu -- killough */
-  {1,"",   M_Sound,'s'}
+  {1,"M_SVOL",   M_Sound,'s'}
 };
 
 menu_t OptionsDef =

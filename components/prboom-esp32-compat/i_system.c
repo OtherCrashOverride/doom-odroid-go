@@ -316,7 +316,7 @@ void I_Read(int ifd, void* vbuf, size_t sz)
 
 const char *I_DoomExeDir(void)
 {
-  return "";
+  return "/sd/odroid/data/doom";
 }
 
 
