@@ -174,8 +174,10 @@ int JoystickRead()
 	if (!state.Volume)
 		result |= 0x1000;
 	
-	if (!state.Menu)
+	if (!state.Menu){
 		result |= 0x200;
+		result |= 0x100;
+	}
 
 	return result;
 }
