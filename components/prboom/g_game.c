@@ -1443,7 +1443,7 @@ void G_ForcedLoadGame(void)
 // killough 5/15/98: add command-line
 void G_LoadGame(int slot, boolean command)
 {
-  lprintf(LO_INFO, "G_LoadGame: slot %d, command %d", slot, command);
+  lprintf(LO_INFO, "G_LoadGame: slot %d, command %d\n", slot, command);
   if (!demoplayback && !command) {
     // CPhipps - handle savegame filename in G_DoLoadGame
     //         - Delay load so it can be communicated in net game
@@ -1509,17 +1509,17 @@ static const size_t num_version_headers = sizeof(version_headers) / sizeof(versi
 
 void G_DoLoadGame(void)
 {
-  lprintf(LO_INFO, "G_DoLoadGame... ");
+  lprintf(LO_INFO, "G_DoLoadGame... \n");
   int  length, i;
   // CPhipps - do savegame filename stuff here
   char name[PATH_MAX+1];     // killough 3/22/98
   int savegame_compatibility = -1;
 
-  lprintf(LO_INFO, "G_DoLoadGame: About to call G_SaveGameName(%s,%d,%d,%d) ", name, sizeof(name), savegameslot, demoplayback);
+  lprintf(LO_INFO, "G_DoLoadGame: About to call G_SaveGameName(name,%d,%d,%d) \n", sizeof(name), savegameslot, demoplayback);
   G_SaveGameName(name,sizeof(name),savegameslot, demoplayback);
 
   gameaction = ga_nothing;
-  lprintf(LO_INFO, "G_DoLoadGame: About to call M_ReadFile(%s, savebuffer)", name);
+  lprintf(LO_INFO, "G_DoLoadGame: About to call M_ReadFile(%s, savebuffer)\n", name);
   length = M_ReadFile(name, &savebuffer);
   if (length<=0)
     I_Error("Couldn't read file %s: %s", name, "(Unknown Error)");
@@ -2219,6 +2219,7 @@ void G_WriteDemoTiccmd (ticcmd_t* cmd)
 
 void G_RecordDemo (const char* name)
 {
+  lprintf(LO_INFO, "G_RecordDemo %s\n", name);
   char     demoname[PATH_MAX];
   usergame = false;
   AddDefaultExtension(strcpy(demoname, name), ".lmp");  // 1/18/98 killough
@@ -2262,6 +2263,7 @@ void G_RecordDemo (const char* name)
 
       /* Return to the last save position, and load the relevant savegame */
       fseek(demofp, -rc, SEEK_CUR);
+      lprintf(LO_INFO, "G_RecordDemo: About to load game in slot %i\n", slot);
       G_LoadGame(slot, false);
       autostart = false;
     }

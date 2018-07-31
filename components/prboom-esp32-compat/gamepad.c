@@ -79,7 +79,7 @@ static const JsKeyMap keymap[]={
 	{0x4000, &key_use},				//cross
 	{0x2000, &key_fire},			//circle
 	{0x2000, &key_menu_enter},		//circle
-	{0x8000, &key_pause},			//square
+	{0x8000, &key_loadgame},			//square
 	{0x1000, &key_weapontoggle},	//triangle
 
 	{0x8, &key_escape},				//start
@@ -169,7 +169,7 @@ int JoystickRead()
 		result |= 0x8;
 
 	if (!state.Select)
-		result |= 0x1;
+		result |= 0x8000;
 
 	if (!state.Volume)
 		result |= 0x1000;
