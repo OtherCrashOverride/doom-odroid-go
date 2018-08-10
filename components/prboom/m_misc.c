@@ -71,6 +71,8 @@
 #include "r_demo.h"
 #include "r_fps.h"
 
+#include "../odroid/odroid_display.h"
+
 /* cph - disk icon not implemented */
 static inline void I_BeginRead(void) {}
 static inline void I_EndRead(void) {}
@@ -86,9 +88,11 @@ boolean M_WriteFile(char const *name, void *source, int length)
   FILE *fp;
 //  return 0;
   errno = 0;
-
+  //set up a mutex to restrict LCD updates
+  odroid_display_lock_gb_display();
   if (!(fp = fopen(name, "wb"))){       // Try opening file
-    lprintf(LO_WARN, "M_WriteFile: Unable to open file %s for writing", name);
+    lprintf(LO_WARN, "M_WriteFile: Unable to open file %s for writing\n", name);
+    odroid_display_unlock_gb_display();
     return 0;                          // Could not open file for writing
   }
 
@@ -101,7 +105,7 @@ boolean M_WriteFile(char const *name, void *source, int length)
     lprintf(LO_WARN, "M_WriteFile: Written file has zero length");
     remove(name);
   }
-
+  odroid_display_unlock_gb_display();
   return length;
 }
 
@@ -116,6 +120,8 @@ int M_ReadFile(char const *name, byte **buffer)
   FILE *fp;
 
   lprintf(LO_WARN, "Attempting M_ReadFile %s\n", name);
+  //set up a mutex to restrict LCD updates
+  odroid_display_lock_gb_display();
 //  return -1;
   if ((fp = fopen(name, "rb")))
     {
@@ -130,10 +136,16 @@ int M_ReadFile(char const *name, byte **buffer)
         {
           fclose(fp);
           I_EndRead();
+	  odroid_display_unlock_gb_display();
           return length;
         }
       fclose(fp);
     }
+    else{
+	lprintf(LO_WARN, "M_ReadFile: fopen returned error");
+    }
+
+  odroid_display_unlock_gb_display();
 
   /* cph 2002/08/10 - this used to return 0 on error, but that's ambiguous,
    * because we could have a legit 0-length file. So make it -1. */

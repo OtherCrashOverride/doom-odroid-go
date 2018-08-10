@@ -25,7 +25,7 @@
 #include "driver/ledc.h"
 
 #include "sdkconfig.h"
-
+#include "../odroid/odroid_display.h"
 
 #if 1
 #define PIN_NUM_MISO 19
@@ -224,7 +224,9 @@ void ili_cmd(spi_device_handle_t spi, const uint8_t cmd)
     t.length=8;                     //Command is 8 bits
     t.tx_buffer=&cmd;               //The data is the cmd itself
     t.user=(void*)0;                //D/C needs to be set to 0
+    odroid_display_lock_gb_display(); //Set up a mutex to prevent crashes due to SD
     ret=spi_device_transmit(spi, &t);  //Transmit!
+    odroid_display_unlock_gb_display(); //Free the mutex
     assert(ret==ESP_OK);            //Should have had no issues.
 }
 
@@ -238,7 +240,9 @@ void ili_data(spi_device_handle_t spi, const uint8_t *data, int len)
     t.length=len*8;                 //Len is in bytes, transaction length is in bits.
     t.tx_buffer=data;               //Data
     t.user=(void*)1;                //D/C needs to be set to 1
+    odroid_display_lock_gb_display(); //Set up a mutex to prevent crashes due to SD
     ret=spi_device_transmit(spi, &t);  //Transmit!
+    odroid_display_unlock_gb_display(); //Free the mutex
     assert(ret==ESP_OK);            //Should have had no issues.
 }
 

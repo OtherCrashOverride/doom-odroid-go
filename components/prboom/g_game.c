@@ -1522,7 +1522,7 @@ void G_DoLoadGame(void)
   lprintf(LO_INFO, "G_DoLoadGame: About to call M_ReadFile(%s, savebuffer)\n", name);
   length = M_ReadFile(name, &savebuffer);
   if (length<=0)
-    I_Error("Couldn't read file %s: %s", name, "(Unknown Error)");
+    I_Error("Couldn't read file %s: %s", name, "(Unknown Error)\n");
   save_p = savebuffer + SAVESTRINGSIZE;
 
   // CPhipps - read the description field, compare with supported ones
