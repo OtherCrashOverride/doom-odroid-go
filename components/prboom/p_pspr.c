@@ -164,74 +164,125 @@ int P_SwitchWeapon(player_t *player)
   // killough 2/8/98: follow preferences and fix BFG/SSG bugs
   lprintf(LO_INFO, "P_SwitchWeapon: currentweapon = %i\n", currentweapon);
   /* Discarded old logic and try to cycle through all weapons for Odroid GO */
-//  do
-    switch (currentweapon)
-      {
-//      case 8:
-//	lprintf(LO_INFO, "P_SwitchWeapon: looking at ???\n");
-//        if (!player->powers[pw_strength])      // allow chainsaw override
-//          break;
-      case 9:
-	lprintf(LO_INFO, "P_SwitchWeapon: looking at fist\n");
+  if(demoplayback){
+      do
+        switch (*prefer++)
+          {
+          case 1:
+            if (!player->powers[pw_strength])      // allow chainsaw override
+              break;
+          case 0:
+            newweapon = wp_fist;
+            break;
+          case 2:
+            if (player->ammo[am_clip])
+              newweapon = wp_pistol;
+            break;
+          case 3:
+            if (player->weaponowned[wp_shotgun] && player->ammo[am_shell])
+              newweapon = wp_shotgun;
+            break;
+          case 4:
+            if (player->weaponowned[wp_chaingun] && player->ammo[am_clip])
+              newweapon = wp_chaingun;
+            break;
+          case 5:
+            if (player->weaponowned[wp_missile] && player->ammo[am_misl])
+              newweapon = wp_missile;
+            break;
+          case 6:
+            if (player->weaponowned[wp_plasma] && player->ammo[am_cell] &&
+                gamemode != shareware)
+              newweapon = wp_plasma;
+            break;
+          case 7:
+            if (player->weaponowned[wp_bfg] && gamemode != shareware &&
+                player->ammo[am_cell] >= (demo_compatibility ? 41 : 40))
+              newweapon = wp_bfg;
+            break;
+          case 8:
+            if (player->weaponowned[wp_chainsaw])
+              newweapon = wp_chainsaw;
+            break;
+          case 9:
+            if (player->weaponowned[wp_supershotgun] && gamemode == commercial &&
+                player->ammo[am_shell] >= (demo_compatibility ? 3 : 2))
+              newweapon = wp_supershotgun;
+            break;
+          }
+      while (newweapon==currentweapon && --i);          // killough 5/2/98
+  }
+  else{
+
+    //  do
+        switch (currentweapon)
+          {
+    //      case 8:
+    //	lprintf(LO_INFO, "P_SwitchWeapon: looking at ???\n");
+    //        if (!player->powers[pw_strength])      // allow chainsaw override
+    //          break;
+          case 9:
+        lprintf(LO_INFO, "P_SwitchWeapon: looking at fist\n");
+            newweapon = wp_fist;
+            break;
+          case 0:
+        lprintf(LO_INFO, "P_SwitchWeapon: looking at pistol\n");
+            if (player->ammo[am_clip]){
+              newweapon = wp_pistol;
+              break;
+        }
+          case 1:
+        lprintf(LO_INFO, "P_SwitchWeapon: looking at shotgun\n");
+            if (player->weaponowned[wp_shotgun] && player->ammo[am_shell]){
+              newweapon = wp_shotgun;
+              break;
+        }
+          case 2:
+        lprintf(LO_INFO, "P_SwitchWeapon: looking at chaingun\n");
+            if (player->weaponowned[wp_chaingun] && player->ammo[am_clip]){
+              newweapon = wp_chaingun;
+              break;
+        }
+          case 3:
+        lprintf(LO_INFO, "P_SwitchWeapon: looking at missile\n");
+            if (player->weaponowned[wp_missile] && player->ammo[am_misl]){
+              newweapon = wp_missile;
+              break;
+        }
+          case 4:
+        lprintf(LO_INFO, "P_SwitchWeapon: looking at plasma\n");
+            if (player->weaponowned[wp_plasma] && player->ammo[am_cell] &&
+                gamemode != shareware){
+              newweapon = wp_plasma;
+              break;
+        }
+          case 5:
+        lprintf(LO_INFO, "P_SwitchWeapon: looking at bfg\n");
+            if (player->weaponowned[wp_bfg] && gamemode != shareware &&
+                player->ammo[am_cell] >= (demo_compatibility ? 41 : 40)){
+              newweapon = wp_bfg;
+              break;
+        }
+          case 6:
+        lprintf(LO_INFO, "P_SwitchWeapon: looking at chainsaw\n");
+            if (player->weaponowned[wp_chainsaw]){
+              newweapon = wp_chainsaw;
+              break;
+        }
+          case 7:
+        lprintf(LO_INFO, "P_SwitchWeapon: looking at supershotgun\n");
+            if (player->weaponowned[wp_supershotgun] && gamemode == commercial &&
+                player->ammo[am_shell] >= (demo_compatibility ? 3 : 2)){
+              newweapon = wp_supershotgun;
+              break;
+        }
+          }
+    //  while (newweapon==currentweapon && --i);          // killough 5/2/98
+      if(currentweapon == newweapon){
+        //no change - give him the fist
+        lprintf(LO_INFO, "P_SwitchWeapon: no better weapon found - using fist");
         newweapon = wp_fist;
-        break;
-      case 0:
-	lprintf(LO_INFO, "P_SwitchWeapon: looking at pistol\n");
-        if (player->ammo[am_clip]){
-          newweapon = wp_pistol;
-          break;
-	}
-      case 1:
-	lprintf(LO_INFO, "P_SwitchWeapon: looking at shotgun\n");
-        if (player->weaponowned[wp_shotgun] && player->ammo[am_shell]){
-          newweapon = wp_shotgun;
-          break;
-	}
-      case 2:
-	lprintf(LO_INFO, "P_SwitchWeapon: looking at chaingun\n");
-        if (player->weaponowned[wp_chaingun] && player->ammo[am_clip]){
-          newweapon = wp_chaingun;
-          break;
-	}
-      case 3:
-	lprintf(LO_INFO, "P_SwitchWeapon: looking at missile\n");
-        if (player->weaponowned[wp_missile] && player->ammo[am_misl]){
-          newweapon = wp_missile;
-          break;
-	}
-      case 4:
-	lprintf(LO_INFO, "P_SwitchWeapon: looking at plasma\n");
-        if (player->weaponowned[wp_plasma] && player->ammo[am_cell] &&
-            gamemode != shareware){
-          newweapon = wp_plasma;
-          break;
-	}
-      case 5:
-	lprintf(LO_INFO, "P_SwitchWeapon: looking at bfg\n");
-        if (player->weaponowned[wp_bfg] && gamemode != shareware &&
-            player->ammo[am_cell] >= (demo_compatibility ? 41 : 40)){
-          newweapon = wp_bfg;
-          break;
-	}
-      case 6:
-	lprintf(LO_INFO, "P_SwitchWeapon: looking at chainsaw\n");
-        if (player->weaponowned[wp_chainsaw]){
-          newweapon = wp_chainsaw;
-          break;
-	}
-      case 7:
-	lprintf(LO_INFO, "P_SwitchWeapon: looking at supershotgun\n");
-        if (player->weaponowned[wp_supershotgun] && gamemode == commercial &&
-            player->ammo[am_shell] >= (demo_compatibility ? 3 : 2)){
-          newweapon = wp_supershotgun;
-          break;
-	}
       }
-//  while (newweapon==currentweapon && --i);          // killough 5/2/98
-  if(currentweapon == newweapon){
-    //no change - give him the fist
-    lprintf(LO_INFO, "P_SwitchWeapon: no better weapon found - using fist");
-    newweapon = wp_fist;
   }
   lprintf(LO_INFO, "P_SwitchWeapon: selected %i\n", newweapon);
   return newweapon;
