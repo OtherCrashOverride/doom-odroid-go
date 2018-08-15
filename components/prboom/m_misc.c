@@ -72,6 +72,7 @@
 #include "r_fps.h"
 
 #include "../odroid/odroid_display.h"
+#include "../odroid/odroid_sdcard.h"
 
 /* cph - disk icon not implemented */
 static inline void I_BeginRead(void) {}
@@ -122,6 +123,8 @@ int M_ReadFile(char const *name, byte **buffer)
   lprintf(LO_WARN, "Attempting M_ReadFile %s\n", name);
   //set up a mutex to restrict LCD updates
   odroid_display_lock_gb_display();
+  int filesize=odroid_sdcard_get_filesize(name);
+  lprintf(LO_WARN, "File %s has size %d\n", name, filesize);
 //  return -1;
   if ((fp = fopen(name, "rb")))
     {
@@ -142,7 +145,7 @@ int M_ReadFile(char const *name, byte **buffer)
       fclose(fp);
     }
     else{
-	lprintf(LO_WARN, "M_ReadFile: fopen returned error");
+	lprintf(LO_WARN, "M_ReadFile: fopen returned error\n");
     }
 
   odroid_display_unlock_gb_display();
