@@ -21,6 +21,7 @@
 #include "d_event.h"
 #include "g_game.h"
 #include "d_main.h"
+#include "m_cheat.h"
 #include "gamepad.h"
 #include "lprintf.h"
 
@@ -76,13 +77,13 @@ static const JsKeyMap keymap[]={
 	{0x80, &key_left},
 	{0x20, &key_right},
 
-	{0x4000, &key_use},				//cross
+	{0x4000, &key_use},				//start
 	{0x2000, &key_fire},			//circle
 	{0x2000, &key_menu_enter},		//circle
 	{0x8000, &key_loadgame},			//square
 	{0x1000, &key_weapontoggle},	//triangle
 
-	{0x8, &key_escape},				//start
+	{0x8, &key_escape},				//menu
 	{0x1, &key_map},				//select
 
 	{0x400, &key_strafeleft},		//L1
@@ -148,35 +149,108 @@ int JoystickRead()
 	int result = 0;
 
 	if (!state.Up)
-		result |= 0x10;
+		result |= 0x10; //key_up
 
 	if (!state.Down)
-		result |= 0x40;
+		result |= 0x40; //key_down
 
 	if (!state.Left)
-		result |= 0x80;
+		result |= 0x80; //key_left
 
 	if (!state.Right)
-		result |= 0x20;
+		result |= 0x20; //key_right
 
 	if (!state.A)
-		result |= 0x2000;
-
-	if (!state.B)
-		result |= 0x4000;
+		result |= 0x2000; //key_fire, key_menu_enter
 
 	if (!state.Start)
-		result |= 0x8;
+		result |= 0x4000; //key_use
+
+	if (!state.Menu)
+		result |= 0x8; //key_escape
 
 	if (!state.Select)
-		result |= 0x8000;
+		result |= 0x1000; //key_weapontoggle
 
 	if (!state.Volume)
-		result |= 0x1000;
+		result |= 0x1; //key_map
 	
-	if (!state.Menu){
-		result |= 0x200;
-		result |= 0x100;
+	if (!state.B){
+		result |= 0x200; //key_strafe
+		result |= 0x100; //key_run
+	}
+
+	if(state.Menu && state.Up){
+		//menu+up pressed at the same time
+		char *code = "iddqd";
+		int i;
+		for(i=0; i<strlen(code); i++){
+			M_FindCheats(code[i]);
+		}
+		result = 0;
+	}
+	if(state.Menu && state.Down){
+		//menu+down pressed at the same time
+		char *code = "idkfa";
+		int i;
+		for(i=0; i<strlen(code); i++){
+			M_FindCheats(code[i]);
+		}
+		result = 0;
+	}
+	if(state.Menu && state.Left){
+		//menu+left pressed at the same time
+		char *code = "idclip";
+		int i;
+		for(i=0; i<strlen(code); i++){
+			M_FindCheats(code[i]);
+		}
+		result = 0;
+	}
+	if(state.Menu && state.Right){
+		//menu+right pressed at the same time
+		char *code = "idbeholdh";
+		int i;
+		for(i=0; i<strlen(code); i++){
+			M_FindCheats(code[i]);
+		}
+		result = 0;
+	}
+	if(state.Volume && state.Up){
+		//volume+up pressed at the same time
+		char *code = "idbeholdl";
+		int i;
+		for(i=0; i<strlen(code); i++){
+			M_FindCheats(code[i]);
+		}
+		result = 0;
+	}
+	if(state.Volume && state.Down){
+		//volume+down pressed at the same time
+		char *code = "idbeholds";
+		int i;
+		for(i=0; i<strlen(code); i++){
+			M_FindCheats(code[i]);
+		}
+		result = 0;
+	}
+	if(state.Volume && state.Left){
+		//volume+left pressed at the same time
+		char *code = "idbeholdi";
+		int i;
+		for(i=0; i<strlen(code); i++){
+			M_FindCheats(code[i]);
+		}
+		result = 0;
+	}
+	if(state.Volume && state.Right){
+		//volume+right pressed at the same time
+		char *code = "idbeholdr";
+		int i;
+		for(i=0; i<strlen(code); i++){
+			M_FindCheats(code[i]);
+		}
+		result = 0;
 	}
 
 	return result;
