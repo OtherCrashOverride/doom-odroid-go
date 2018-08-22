@@ -59,6 +59,11 @@ void app_main()
 	if (part==0) printf("Couldn't find wad part!\n");
 
 	spi_lcd_init();
+	// Non-Volatile Storage support for Odroid-GO
+  	printf("\nLoading Odroid-GO NVS support...\n");
+	nvs_flash_init();
+	printf("Finished loading NVS support.\n");
+
 	jsInit();
 	xTaskCreatePinnedToCore(&doomEngineTask, "doomEngine", 22480, NULL, 5, NULL, 0);
 }

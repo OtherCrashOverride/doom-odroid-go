@@ -30,37 +30,13 @@
 #include "freertos/task.h"
 #include "driver/gpio.h"
 #include <driver/adc.h>
-
-#define ODROID_GAMEPAD_IO_X ADC1_CHANNEL_6
-#define ODROID_GAMEPAD_IO_Y ADC1_CHANNEL_7
-#define ODROID_GAMEPAD_IO_SELECT GPIO_NUM_27
-#define ODROID_GAMEPAD_IO_START GPIO_NUM_39
-#define ODROID_GAMEPAD_IO_A GPIO_NUM_32
-#define ODROID_GAMEPAD_IO_B GPIO_NUM_33
-#define ODROID_GAMEPAD_IO_MENU GPIO_NUM_13
-#define ODROID_GAMEPAD_IO_VOLUME GPIO_NUM_0
-
-
-typedef struct
-{
-    uint8_t Up;
-    uint8_t Right;
-    uint8_t Down;
-    uint8_t Left;
-    uint8_t Select;
-    uint8_t Start;
-    uint8_t Volume;
-    uint8_t Menu;
-    uint8_t A;
-    uint8_t B;
-} JoystickState;
-
+#include "../odroid/odroid_input.h"
 
 //The gamepad uses keyboard emulation, but for compilation, these variables need to be placed
 //somewhere. THis is as good a place as any.
 int usejoystick=0;
 int joyleft, joyright, joyup, joydown;
-
+static odroid_gamepad_state previousJoystickState;
 
 //atomic, for communication between joy thread and main game thread
 volatile int joyVal=0;
@@ -80,7 +56,7 @@ static const JsKeyMap keymap[]={
 	{0x4000, &key_use},				//start
 	{0x2000, &key_fire},			//circle
 	{0x2000, &key_menu_enter},		//circle
-	{0x8000, &key_loadgame},			//square
+	{0x8000, &key_pause},			//square
 	{0x1000, &key_weapontoggle},	//triangle
 
 	{0x8, &key_escape},				//menu
@@ -94,93 +70,61 @@ static const JsKeyMap keymap[]={
 	{0, NULL},
 };
 
+int cheatCurrentLevel = 1;
+
 int JoystickRead()
 {
-	JoystickState state;
+    odroid_gamepad_state state;
 
+    odroid_input_gamepad_read(&state);
 
-    int joyX = adc1_get_raw(ODROID_GAMEPAD_IO_X);
-    int joyY = adc1_get_raw(ODROID_GAMEPAD_IO_Y);
-
-    if (joyX > 2048 + 1024)
-    {
-        state.Left = 1;
-        state.Right = 0;
-    }
-    else if (joyX > 1024)
-    {
-        state.Left = 0;
-        state.Right = 1;
-    }
-    else
-    {
-        state.Left = 0;
-        state.Right = 0;
-    }
-
-    if (joyY > 2048 + 1024)
-    {
-        state.Up = 1;
-        state.Down = 0;
-    }
-    else if (joyY > 1024)
-    {
-        state.Up = 0;
-        state.Down = 1;
-    }
-    else
-    {
-        state.Up = 0;
-        state.Down = 0;
-    }
-
-    state.Select = !(gpio_get_level(ODROID_GAMEPAD_IO_SELECT));
-    state.Start = !(gpio_get_level(ODROID_GAMEPAD_IO_START));
-    state.Volume = !(gpio_get_level(ODROID_GAMEPAD_IO_VOLUME));
-    state.Menu = !(gpio_get_level(ODROID_GAMEPAD_IO_MENU));
-
-    state.A = !(gpio_get_level(ODROID_GAMEPAD_IO_A));
-    state.B = !(gpio_get_level(ODROID_GAMEPAD_IO_B));
-
-    //state.values[ODROID_INPUT_MENU] = !(gpio_get_level(ODROID_GAMEPAD_IO_MENU));
-    //state.values[ODROID_INPUT_VOLUME] = !(gpio_get_level(ODROID_GAMEPAD_IO_VOLUME));
-
-
+    
+/*    lprintf(LO_INFO, "Kepad: Menu: %d, Volume: %d, Select: %d, Start: %d, Up: %d, Down: %d, Left: %d, Right: %d, A: %d, B: %d\n",
+		    state.values[ODROID_INPUT_MENU], state.values[ODROID_INPUT_VOLUME], state.values[ODROID_INPUT_SELECT], state.values[ODROID_INPUT_START], 
+		    state.values[ODROID_INPUT_UP], state.values[ODROID_INPUT_DOWN], state.values[ODROID_INPUT_LEFT], state.values[ODROID_INPUT_RIGHT], 
+		    state.values[ODROID_INPUT_A], state.values[ODROID_INPUT_B]);
+*/
 	int result = 0;
 
-	if (!state.Up)
+	if (!state.values[ODROID_INPUT_UP])
 		result |= 0x10; //key_up
 
-	if (!state.Down)
+	if (!state.values[ODROID_INPUT_DOWN])
 		result |= 0x40; //key_down
 
-	if (!state.Left)
+	if (!state.values[ODROID_INPUT_LEFT])
 		result |= 0x80; //key_left
 
-	if (!state.Right)
+	if (!state.values[ODROID_INPUT_RIGHT])
 		result |= 0x20; //key_right
 
-	if (!state.A)
+	if (!state.values[ODROID_INPUT_A])
 		result |= 0x2000; //key_fire, key_menu_enter
 
-	if (!state.Start)
+	if (!state.values[ODROID_INPUT_START])
 		result |= 0x4000; //key_use
 
-	if (!state.Menu)
+	if (!state.values[ODROID_INPUT_MENU])
 		result |= 0x8; //key_escape
 
-	if (!state.Select)
+	if (!state.values[ODROID_INPUT_SELECT])
 		result |= 0x1000; //key_weapontoggle
 
-	if (!state.Volume)
+	if (!state.values[ODROID_INPUT_VOLUME])
 		result |= 0x1; //key_map
 	
-	if (!state.B){
+	if (!state.values[ODROID_INPUT_B]){
 		result |= 0x200; //key_strafe
 		result |= 0x100; //key_run
 	}
 
-	if(state.Menu && state.Up){
+
+
+	if (state.values[ODROID_INPUT_MENU] && state.values[ODROID_INPUT_START] && !previousJoystickState.values[ODROID_INPUT_START]){
+		result |= 0x8000; //key_pause
+	}
+
+	if(state.values[ODROID_INPUT_MENU] && state.values[ODROID_INPUT_UP] && !previousJoystickState.values[ODROID_INPUT_UP]){
 		//menu+up pressed at the same time
 		char *code = "iddqd";
 		int i;
@@ -189,7 +133,7 @@ int JoystickRead()
 		}
 		result = 0;
 	}
-	if(state.Menu && state.Down){
+	if(state.values[ODROID_INPUT_MENU] && state.values[ODROID_INPUT_DOWN] && !previousJoystickState.values[ODROID_INPUT_DOWN]){
 		//menu+down pressed at the same time
 		char *code = "idkfa";
 		int i;
@@ -198,7 +142,7 @@ int JoystickRead()
 		}
 		result = 0;
 	}
-	if(state.Menu && state.Left){
+	if(state.values[ODROID_INPUT_MENU] && state.values[ODROID_INPUT_LEFT] && !previousJoystickState.values[ODROID_INPUT_LEFT]){
 		//menu+left pressed at the same time
 		char *code = "idclip";
 		int i;
@@ -207,7 +151,7 @@ int JoystickRead()
 		}
 		result = 0;
 	}
-	if(state.Menu && state.Right){
+	if(state.values[ODROID_INPUT_MENU] && state.values[ODROID_INPUT_RIGHT] && !previousJoystickState.values[ODROID_INPUT_RIGHT]){
 		//menu+right pressed at the same time
 		char *code = "idbeholdh";
 		int i;
@@ -216,7 +160,7 @@ int JoystickRead()
 		}
 		result = 0;
 	}
-	if(state.Volume && state.Up){
+	if(state.values[ODROID_INPUT_VOLUME] && state.values[ODROID_INPUT_UP] && !previousJoystickState.values[ODROID_INPUT_UP]){
 		//volume+up pressed at the same time
 		char *code = "idbeholdl";
 		int i;
@@ -225,7 +169,7 @@ int JoystickRead()
 		}
 		result = 0;
 	}
-	if(state.Volume && state.Down){
+	if(state.values[ODROID_INPUT_VOLUME] && state.values[ODROID_INPUT_DOWN] && !previousJoystickState.values[ODROID_INPUT_DOWN]){
 		//volume+down pressed at the same time
 		char *code = "idbeholds";
 		int i;
@@ -234,7 +178,7 @@ int JoystickRead()
 		}
 		result = 0;
 	}
-	if(state.Volume && state.Left){
+	if(state.values[ODROID_INPUT_VOLUME] && state.values[ODROID_INPUT_LEFT] && !previousJoystickState.values[ODROID_INPUT_LEFT]){
 		//volume+left pressed at the same time
 		char *code = "idbeholdi";
 		int i;
@@ -243,15 +187,25 @@ int JoystickRead()
 		}
 		result = 0;
 	}
-	if(state.Volume && state.Right){
+	if(state.values[ODROID_INPUT_VOLUME] && state.values[ODROID_INPUT_RIGHT] && !previousJoystickState.values[ODROID_INPUT_RIGHT]){
 		//volume+right pressed at the same time
-		char *code = "idbeholdr";
+		char code[9];
+		lprintf(LO_INFO, "cheatCurrentLevel = %02d\n", cheatCurrentLevel);
+
+		sprintf(code, "idclev%02d", cheatCurrentLevel);
+		lprintf(LO_INFO, "idclev code: %s\n", code);
 		int i;
 		for(i=0; i<strlen(code); i++){
 			M_FindCheats(code[i]);
 		}
+		cheatCurrentLevel++;
+		if(cheatCurrentLevel > 32){
+			cheatCurrentLevel = 1; 
+		}
 		result = 0;
 	}
+
+	previousJoystickState = state;
 
 	return result;
 }
@@ -293,28 +247,12 @@ void gamepadInit(void)
 
 void JoystickInit()
 {
-    gpio_set_direction(ODROID_GAMEPAD_IO_SELECT, GPIO_MODE_INPUT);
-	gpio_set_pull_mode(ODROID_GAMEPAD_IO_SELECT, GPIO_PULLUP_ONLY);
+	odroid_input_gamepad_init();
 
-	gpio_set_direction(ODROID_GAMEPAD_IO_START, GPIO_MODE_INPUT);
-
-	gpio_set_direction(ODROID_GAMEPAD_IO_A, GPIO_MODE_INPUT);
-	gpio_set_pull_mode(ODROID_GAMEPAD_IO_A, GPIO_PULLUP_ONLY);
-
-    gpio_set_direction(ODROID_GAMEPAD_IO_B, GPIO_MODE_INPUT);
-	gpio_set_pull_mode(ODROID_GAMEPAD_IO_B, GPIO_PULLUP_ONLY);
-
-	adc1_config_width(ADC_WIDTH_12Bit);
-    adc1_config_channel_atten(ODROID_GAMEPAD_IO_X, ADC_ATTEN_11db);
-	adc1_config_channel_atten(ODROID_GAMEPAD_IO_Y, ADC_ATTEN_11db);
-
-	gpio_set_direction(ODROID_GAMEPAD_IO_MENU, GPIO_MODE_INPUT);
-	gpio_set_pull_mode(ODROID_GAMEPAD_IO_MENU, GPIO_PULLUP_ONLY);
-
-    gpio_set_direction(ODROID_GAMEPAD_IO_VOLUME, GPIO_MODE_INPUT);
 }
 
 void jsInit() {
+
 	//Starts the js task
 	JoystickInit();
 	xTaskCreatePinnedToCore(&jsTask, "js", 5000, NULL, 7, NULL, 0);

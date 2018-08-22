@@ -63,7 +63,11 @@
 
 //include support for odroid-go
 #include "../odroid/odroid_sdcard.h"
+//#include "../odroid/odroid_settings.h"
+#include "../odroid/odroid_system.h"
+
 //#include "../odroid/odroid_display.h"
+
 
 /* Most of the following has been rewritten by Lee Killough
  *
@@ -241,6 +245,11 @@ int doom_main(int argc, char const * const *argv)
   */
 
   Z_Init();                  /* 1/18/98 killough: start up memory stuff first */
+
+  // System LED support for Odroid-GO
+  lprintf(LO_INFO, "\nLoading System LED support...\n");
+  odroid_system_init();
+  lprintf(LO_INFO, "Finished loading LED support.\n");
 
   // Init SD Card support for Odroid-GO
   lprintf(LO_INFO, "\nLoading Odroid-GO SD card support...\n");
