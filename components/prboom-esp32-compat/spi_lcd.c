@@ -25,7 +25,7 @@
 #include "driver/ledc.h"
 
 #include "sdkconfig.h"
-
+#include "../odroid/odroid_display.h"
 
 #if 1
 #define PIN_NUM_MISO 19
@@ -224,7 +224,9 @@ void ili_cmd(spi_device_handle_t spi, const uint8_t cmd)
     t.length=8;                     //Command is 8 bits
     t.tx_buffer=&cmd;               //The data is the cmd itself
     t.user=(void*)0;                //D/C needs to be set to 0
+    odroid_display_lock_gb_display(); //Set up a mutex to prevent crashes due to SD
     ret=spi_device_transmit(spi, &t);  //Transmit!
+    odroid_display_unlock_gb_display(); //Free the mutex
     assert(ret==ESP_OK);            //Should have had no issues.
 }
 
@@ -238,7 +240,9 @@ void ili_data(spi_device_handle_t spi, const uint8_t *data, int len)
     t.length=len*8;                 //Len is in bytes, transaction length is in bits.
     t.tx_buffer=data;               //Data
     t.user=(void*)1;                //D/C needs to be set to 1
+    odroid_display_lock_gb_display(); //Set up a mutex to prevent crashes due to SD
     ret=spi_device_transmit(spi, &t);  //Transmit!
+    odroid_display_unlock_gb_display(); //Free the mutex
     assert(ret==ESP_OK);            //Should have had no issues.
 }
 
@@ -387,16 +391,16 @@ void IRAM_ATTR displayTask(void *arg) {
         .spics_io_num=PIN_NUM_CS,               //CS pin
         .queue_size=NO_SIM_TRANS,               //We want to be able to queue this many transfers
         .pre_cb=ili_spi_pre_transfer_callback,  //Specify pre-transfer callback to handle D/C line
-        .flags = SPI_DEVICE_HALFDUPLEX
+        .flags = SPI_DEVICE_NO_DUMMY
     };
 
 	printf("*** Display task starting.\n");
 
     //Initialize the SPI bus
-    ret=spi_bus_initialize(VSPI_HOST, &buscfg, 1);
+    ret=spi_bus_initialize(HSPI_HOST, &buscfg, 1);
     assert(ret==ESP_OK);
     //Attach the LCD to the SPI bus
-    ret=spi_bus_add_device(VSPI_HOST, &devcfg, &spi);
+    ret=spi_bus_add_device(HSPI_HOST, &devcfg, &spi);
     assert(ret==ESP_OK);
     //Initialize the LCD
     ili_init(spi);

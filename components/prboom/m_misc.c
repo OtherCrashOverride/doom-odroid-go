@@ -71,6 +71,9 @@
 #include "r_demo.h"
 #include "r_fps.h"
 
+#include "../odroid/odroid_display.h"
+#include "../odroid/odroid_sdcard.h"
+
 /* cph - disk icon not implemented */
 static inline void I_BeginRead(void) {}
 static inline void I_EndRead(void) {}
@@ -84,20 +87,26 @@ static inline void I_EndRead(void) {}
 boolean M_WriteFile(char const *name, void *source, int length)
 {
   FILE *fp;
-  return 0;
+//  return 0;
   errno = 0;
-
-  if (!(fp = fopen(name, "wb")))       // Try opening file
+  //set up a mutex to restrict LCD updates
+  odroid_display_lock_gb_display();
+  if (!(fp = fopen(name, "wb"))){       // Try opening file
+    lprintf(LO_WARN, "M_WriteFile: Unable to open file %s for writing\n", name);
+    odroid_display_unlock_gb_display();
     return 0;                          // Could not open file for writing
+  }
 
   I_BeginRead();                       // Disk icon on
   length = fwrite(source, 1, length, fp) == (size_t)length;   // Write data
   fclose(fp);
   I_EndRead();                         // Disk icon off
 
-  if (!length)                         // Remove partially written file
+  if (!length){                         // Remove partially written file
+    lprintf(LO_WARN, "M_WriteFile: Written file has zero length");
     remove(name);
-
+  }
+  odroid_display_unlock_gb_display();
   return length;
 }
 
@@ -112,7 +121,11 @@ int M_ReadFile(char const *name, byte **buffer)
   FILE *fp;
 
   lprintf(LO_WARN, "Attempting M_ReadFile %s\n", name);
-  return -1;
+  //set up a mutex to restrict LCD updates
+  odroid_display_lock_gb_display();
+  int filesize=odroid_sdcard_get_filesize(name);
+  lprintf(LO_WARN, "File %s has size %d\n", name, filesize);
+//  return -1;
   if ((fp = fopen(name, "rb")))
     {
       size_t length;
@@ -126,10 +139,16 @@ int M_ReadFile(char const *name, byte **buffer)
         {
           fclose(fp);
           I_EndRead();
+	  odroid_display_unlock_gb_display();
           return length;
         }
       fclose(fp);
     }
+    else{
+	lprintf(LO_WARN, "M_ReadFile: fopen returned error\n");
+    }
+
+  odroid_display_unlock_gb_display();
 
   /* cph 2002/08/10 - this used to return 0 on error, but that's ambiguous,
    * because we could have a legit 0-length file. So make it -1. */

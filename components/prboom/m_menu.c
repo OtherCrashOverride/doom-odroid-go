@@ -756,7 +756,7 @@ void M_LoadSelect(int choice)
 {
   // CPhipps - Modified so savegame filename is worked out only internal
   //  to g_game.c, this only passes the slot.
-
+  lprintf(LO_INFO, "M_LoadSelect: selected choice %d\n", choice);
   G_LoadGame(choice, false); // killough 3/16/98, 5/15/98: add slot, cmd
 
   M_ClearMenus ();
@@ -787,6 +787,7 @@ void M_LoadGame (int choice)
 {
   /* killough 5/26/98: exclude during demo recordings
    * cph - unless a new demo */
+  lprintf(LO_INFO, "M_LoadGame choice %d... demorecording=%i, compatibility_level=%d, prboom_2_compatibility=%d\n", choice, demorecording, compatibility_level, prboom_2_compatibility);
   if (demorecording && (compatibility_level < prboom_2_compatibility))
     {
     M_StartMessage("you can't load a game\n"
@@ -795,8 +796,9 @@ void M_LoadGame (int choice)
     return;
     }
 
-  M_SetupNextMenu(&LoadDef);
-  M_ReadSaveStrings();
+//  M_SetupNextMenu(&LoadDef);
+//  M_ReadSaveStrings();
+   M_LoadSelect(choice); 
 }
 
 /////////////////////////////
@@ -839,6 +841,19 @@ void M_ReadSaveStrings(void)
   for (i = 0 ; i < load_end ; i++) {
     char name[PATH_MAX+1];    // killough 3/22/98
     FILE *fp;  // killough 11/98: change to use stdio
+
+    // Set default savegame string names, because we can't input any
+    lprintf(LO_INFO, "Faking save game names...\n");
+    strcpy(savegamestrings[0], "Quick_save\0");
+    strcpy(savegamestrings[1], "Regular_save\0");
+    strcpy(savegamestrings[2], "Danger_Will_Robinson\0");
+    strcpy(savegamestrings[3], "Oh_not_again\0");
+    strcpy(savegamestrings[4], "I_will_win\0");
+    strcpy(savegamestrings[5], "Im_lost\0");
+    strcpy(savegamestrings[6], "Not_this_again\0");
+    strcpy(savegamestrings[7], "Mamma_mia\0");
+    strcpy(savegamestrings[8], "Save_me\0");
+    strcpy(savegamestrings[9], "The_final_save\0");
 
     /* killough 3/22/98
      * cph - add not-demoplayback parameter */
@@ -890,6 +905,7 @@ static void M_DoSave(int slot)
   // PICK QUICKSAVE SLOT YET?
   if (quickSaveSlot == -2)
     quickSaveSlot = slot;
+
 }
 
 //
@@ -954,16 +970,16 @@ enum
 menuitem_t OptionsMenu[]=
 {
   // killough 4/6/98: move setup to be a sub-menu of OPTIONs
-  {1,"", M_General, 'g'},      // killough 10/98
-  {1,"",  M_Setup,   's'},                          // phares 3/21/98
-  {1,"", M_EndGame,'e'},
-  {1,"",  M_ChangeMessages,'m'},
+//  {1,"M_GENERL", M_General, 'g'},      // killough 10/98
+//  {1,"M_SETUP",  M_Setup,   's'},                          // phares 3/21/98
+  {1,"M_ENDGAM", M_EndGame,'e'},
+  {1,"M_MESSG",  M_ChangeMessages,'m'},
   /*    {1,"M_DETAIL",  M_ChangeDetail,'g'},  unused -- killough */
-  {2,"", M_SizeDisplay,'s'},
+  {2,"M_SCRNSZ", M_SizeDisplay,'s'},
   {-1,"",0},
-  {1,"",  M_ChangeSensitivity,'m'},
+//  {1,"M_MSENS",  M_ChangeSensitivity,'m'},
   /* {-1,"",0},  replaced with submenu -- killough */
-  {1,"",   M_Sound,'s'}
+  {1,"M_SVOL",   M_Sound,'s'}
 };
 
 menu_t OptionsDef =
@@ -4169,12 +4185,14 @@ boolean M_Responder (event_t* ev) {
           shiftdown = false;          // so we need to note the difference
     }                                 // here using the 'shiftdown' boolean.
 
+  lprintf(LO_INFO, "M_Responder: Processing ch %d\n", ch);
   if (ch == -1)
     return false; // we can't use the event here
 
   // Save Game string input
 
   if (saveStringEnter) {
+    lprintf(LO_INFO, "M_Responder: saveStringEnter is true\n");
     if (ch == key_menu_backspace)                            // phares 3/7/98
       {
       if (saveCharIndex > 0)
@@ -4199,6 +4217,7 @@ boolean M_Responder (event_t* ev) {
 
       else
   {
+	  lprintf(LO_INFO, "M_Responder: on the else branch inside saveStringEnter\n");
   ch = toupper(ch);
   if (ch >= 32 && ch <= 127 &&
       saveCharIndex < SAVESTRINGSIZE-1 &&
@@ -4208,12 +4227,14 @@ boolean M_Responder (event_t* ev) {
     savegamestrings[saveSlot][saveCharIndex] = 0;
     }
   }
+      lprintf(LO_INFO, "M_Responder: exiting with return true\n");
     return true;
   }
 
   // Take care of any messages that need input
 
   if (messageToPrint) {
+	lprintf(LO_INFO, "M_Responder: message needs input %d\n", messageNeedsInput);
     if (messageNeedsInput == true &&
   !(ch == ' ' || ch == 'n' || ch == 'y' || ch == key_escape)) // phares
       return false;
@@ -4267,7 +4288,7 @@ boolean M_Responder (event_t* ev) {
 
     if (ch == key_loadgame)     // Load Game
       {
-      M_StartControlPanel();
+//      M_StartControlPanel();
       S_StartSound(NULL,sfx_swtchn);
       M_LoadGame(0);
       return true;
